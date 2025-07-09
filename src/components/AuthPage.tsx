@@ -46,7 +46,7 @@ export const AuthPage = ({ onLogin }: AuthPageProps) => {
             <div className="w-12 h-12 bg-primary-foreground text-primary rounded-lg flex items-center justify-center">
               <FileText className="h-6 w-6" />
             </div>
-            <h1 className="text-3xl font-bold">DocChat AI</h1>
+            <h1 className="text-3xl font-bold">DocChat</h1>
           </div>
           
           <h2 className="text-4xl font-bold mb-6">
