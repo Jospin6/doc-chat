@@ -1,4 +1,3 @@
-
 import { FileText, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,11 +13,17 @@ interface Document {
 
 interface DocumentListProps {
   documents: Document[];
+  selectedDocuments: Document[];
+  onToggleSelect: (document: Document) => void;
   onDocumentSelect: (document: Document) => void;
-  selectedDocument: Document | null;
 }
 
-export const DocumentList = ({ documents, onDocumentSelect, selectedDocument }: DocumentListProps) => {
+export const DocumentList = ({
+  documents,
+  selectedDocuments,
+  onToggleSelect,
+  onDocumentSelect,
+}: DocumentListProps) => {
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -49,6 +54,9 @@ export const DocumentList = ({ documents, onDocumentSelect, selectedDocument }: 
     }
   };
 
+  const isSelected = (doc: Document) =>
+    selectedDocuments.some((d) => d.id === doc.id);
+
   if (documents.length === 0) {
     return (
       <div className="text-center py-8">
@@ -60,68 +68,73 @@ export const DocumentList = ({ documents, onDocumentSelect, selectedDocument }: 
 
   return (
     <div className="space-y-2">
-      {documents.map((document) => (
-        <div
-          key={document.id}
-          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-            selectedDocument?.id === document.id
+      {documents.map((document) => {
+        const selected = isSelected(document);
+        return (
+          <div
+            key={document.id}
+            className={`p-3 border rounded-lg cursor-pointer transition-colors ${selected
               ? 'border-primary bg-primary/10'
               : 'hover:bg-muted/50'
-          }`}
-          onClick={() => document.status === 'ready' && onDocumentSelect(document)}
-        >
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0 mt-1">
-              {getStatusIcon(document.status)}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-medium truncate">{document.name}</h4>
-                {getStatusBadge(document.status)}
-              </div>
-              
-              <div className="flex items-center text-xs text-muted-foreground space-x-2">
-                <span>{formatFileSize(document.size)}</span>
-                <span>•</span>
-                <span>{document.uploadedAt}</span>
-                {document.chunksCount && (
-                  <>
-                    <span>•</span>
-                    <span>{document.chunksCount} chunks</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {document.status === 'ready' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-2"
-              onClick={(e) => {
-                e.stopPropagation();
+              }`}
+            onClick={() => {
+              if (document.status === 'ready') {
+                onToggleSelect(document);
                 onDocumentSelect(document);
-              }}
-            >
-              Chat with document
-            </Button>
-          )}
-          
-          {document.status === 'processing' && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Processing document and generating embeddings...
-            </p>
-          )}
-          
-          {document.status === 'error' && (
-            <p className="text-xs text-red-500 mt-2">
-              Failed to process document. Please try uploading again.
-            </p>
-          )}
-        </div>
-      ))}
+              }
+            }}
+          >
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 mt-1">{getStatusIcon(document.status)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm font-medium truncate">{document.name}</h4>
+                  {getStatusBadge(document.status)}
+                </div>
+
+                <div className="flex items-center text-xs text-muted-foreground space-x-2">
+                  <span>{formatFileSize(document.size)}</span>
+                  <span>•</span>
+                  <span>{document.uploadedAt}</span>
+                  {document.chunksCount && (
+                    <>
+                      <span>•</span>
+                      <span>{document.chunksCount} chunks</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {document.status === 'ready' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSelect(document);
+                  onDocumentSelect(document);
+                }}
+              >
+                {selected ? 'Désélectionner' : 'Chat avec ce document'}
+              </Button>
+            )}
+
+            {document.status === 'processing' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Processing document and generating embeddings...
+              </p>
+            )}
+
+            {document.status === 'error' && (
+              <p className="text-xs text-red-500 mt-2">
+                Failed to process document. Please try uploading again.
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

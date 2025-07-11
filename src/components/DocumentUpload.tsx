@@ -1,16 +1,24 @@
-
 import { useState, useCallback } from 'react';
 import { Upload, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
+import * as pdfjsLib from 'pdfjs-dist';
+import { indexDocument } from '@/lib/indexDocument';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DocumentUploadProps {
-  onUpload: (files: File[]) => void;
+  onUpload: (payload: {
+    file: File;
+    bucketPath: string;
+    extractedText: string;
+  }) => void;
 }
 
 export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const {user} = useAuth()
   const [uploadingFiles, setUploadingFiles] = useState<Array<{
     file: File;
     progress: number;
@@ -31,20 +39,20 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files).filter(
       file => file.type === 'application/pdf'
     );
-    
+
     if (files.length === 0) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload PDF files only",
-        variant: "destructive"
+        title: 'Invalid file type',
+        description: 'Please upload PDF files only',
+        variant: 'destructive',
       });
       return;
     }
-    
+
     handleFiles(files);
   }, [toast]);
 
@@ -53,52 +61,98 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
     handleFiles(files);
   }, []);
 
-  const handleFiles = (files: File[]) => {
+  const handleFiles = async (files: File[]) => {
     const newUploads = files.map(file => ({
       file,
       progress: 0,
-      status: 'uploading' as const
+      status: 'uploading' as const,
     }));
-    
+
     setUploadingFiles(prev => [...prev, ...newUploads]);
-    
-    // Simulate upload process
-    newUploads.forEach((upload, index) => {
-      simulateUpload(upload.file, index);
-    });
-    
-    onUpload(files);
+
+    for (const upload of newUploads) {
+      await processFile(upload.file);
+    }
   };
 
-  const simulateUpload = (file: File, index: number) => {
-    const interval = setInterval(() => {
-      setUploadingFiles(prev => {
-        const updated = [...prev];
-        const uploadIndex = updated.findIndex(u => u.file === file);
-        
-        if (uploadIndex === -1) return prev;
-        
-        const upload = updated[uploadIndex];
-        
-        if (upload.progress < 70) {
-          upload.progress += Math.random() * 20;
-          upload.status = 'uploading';
-        } else if (upload.progress < 100) {
-          upload.progress = 100;
-          upload.status = 'processing';
-        } else {
-          upload.status = 'complete';
-          clearInterval(interval);
-          
-          toast({
-            title: "Document uploaded successfully",
-            description: `${file.name} is ready for chat`,
-          });
-        }
-        
-        return updated;
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let text = '';
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item: any) => item.str).join(' ');
+      text += pageText + '\n';
+    }
+
+    return text;
+  };
+
+  const processFile = async (file: File) => {
+    setUploadingFiles(prev =>
+      prev.map(u =>
+        u.file === file ? { ...u, status: 'uploading', progress: 10 } : u
+      )
+    );
+
+    try {
+      const fileName = `${Date.now()}_${file.name}`;
+
+      // Upload dans Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file, {
+          contentType: 'application/pdf',
+        });
+
+      if (error) throw error;
+      const bucketPath = data?.path;
+
+      setUploadingFiles(prev =>
+        prev.map(u =>
+          u.file === file ? { ...u, status: 'processing', progress: 70 } : u
+        )
+      );
+
+      // Extraire le texte
+      const extractedText = await extractTextFromPDF(file);
+
+      // Embedding
+      await indexDocument(extractedText, user.id, bucketPath)
+
+      // Callback pour traitement (embedding, DB, etc.)
+      onUpload({
+        file,
+        bucketPath: bucketPath!,
+        extractedText,
       });
-    }, 500);
+
+      setUploadingFiles(prev =>
+        prev.map(u =>
+          u.file === file ? { ...u, status: 'complete', progress: 100 } : u
+        )
+      );
+
+      toast({
+        title: 'Upload réussi',
+        description: `${file.name} est prêt à être utilisé`,
+      });
+    } catch (err) {
+      console.error(err);
+      setUploadingFiles(prev =>
+        prev.map(u =>
+          u.file === file ? { ...u, status: 'error', progress: 0 } : u
+        )
+      );
+
+      toast({
+        title: 'Erreur upload',
+        description: `Impossible de traiter ${file.name}`,
+        variant: 'destructive',
+      });
+    }
   };
 
   const removeUpload = (file: File) => {

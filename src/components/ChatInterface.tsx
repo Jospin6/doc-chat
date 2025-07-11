@@ -1,10 +1,11 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { createChatChain } from '@/lib/createChatChain';
 
 interface Document {
   id: string;
@@ -27,21 +28,35 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-  document: Document;
+  selectedDocuments: Document[];
+  userId: string;
 }
 
-export const ChatInterface = ({ document }: ChatInterfaceProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: `Hello! I'm ready to answer questions about "${document.name}". What would you like to know?`,
-      timestamp: new Date().toISOString()
-    }
-  ]);
+export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [chatChain, setChatChain] = useState<any>(null);
+
+  // Initialiser chatChain au montage
+  useEffect(() => {
+    const initChain = async () => {
+      const chain = await createChatChain(userId, selectedDocuments.map(d => d.id));
+      setChatChain(chain);
+
+      setMessages([
+        {
+          id: '1',
+          role: 'assistant',
+          content: `Salut ! Tu peux poser des questions sur tes documents sélectionnés.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    };
+
+    initChain();
+  }, [userId, selectedDocuments]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -59,41 +74,48 @@ export const ChatInterface = ({ document }: ChatInterfaceProps) => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || !chatChain) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: inputValue,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
+    try {
+      const chatHistory = messages.map((msg) =>
+        msg.role === 'user'
+          ? new HumanMessage(msg.content)
+          : new AIMessage(msg.content)
+      );
+
+      const response = await chatChain.invoke({
+        input: inputValue,
+        chat_history: chatHistory,
+      });
+
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
         role: 'assistant',
-        content: `Based on your document "${document.name}", here's what I found: This is a simulated response to your question "${userMessage.content}". In a real implementation, this would use RAG to search through your document embeddings and generate a contextual answer using GPT-4.`,
+        content: response.answer || 'Je n’ai pas trouvé de réponse pertinente.',
         timestamp: new Date().toISOString(),
-        sources: [
-          {
-            chunk: "Relevant text chunk from your document would appear here",
-            similarity: 0.89
-          },
-          {
-            chunk: "Another relevant section that helped answer your question",
-            similarity: 0.76
-          }
-        ]
+        sources: (response.context || []).map((doc: any) => ({
+          chunk: doc.pageContent,
+          similarity: doc.similarity ?? 0.0,
+        })),
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error("Erreur pendant le chat:", err);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -124,13 +146,9 @@ export const ChatInterface = ({ document }: ChatInterfaceProps) => {
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {message.role === 'user' ? (
-                    <User className="h-4 w-4" />
-                  ) : (
-                    <Bot className="h-4 w-4" />
-                  )}
+                  {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
-                
+
                 <div className="space-y-2">
                   <Card
                     className={`p-3 ${
@@ -144,14 +162,14 @@ export const ChatInterface = ({ document }: ChatInterfaceProps) => {
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </p>
                   </Card>
-                  
+
                   {message.sources && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground font-medium">Sources:</p>
                       {message.sources.map((source, index) => (
                         <Card key={index} className="p-2 bg-secondary/50">
                           <p className="text-xs text-muted-foreground">
-                            Similarity: {Math.round(source.similarity * 100)}%
+                            Similarité: {Math.round(source.similarity * 100)}%
                           </p>
                           <p className="text-sm mt-1">{source.chunk}</p>
                         </Card>
@@ -162,7 +180,7 @@ export const ChatInterface = ({ document }: ChatInterfaceProps) => {
               </div>
             </div>
           ))}
-          
+
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex space-x-2 max-w-[80%]">
@@ -183,7 +201,7 @@ export const ChatInterface = ({ document }: ChatInterfaceProps) => {
 
       <div className="flex space-x-2 pt-4 border-t">
         <Input
-          placeholder="Ask a question about your document..."
+          placeholder="Ask a question about your documents..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}

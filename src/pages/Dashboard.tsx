@@ -1,11 +1,11 @@
-
 import { useState } from 'react';
 import { Upload, FileText, MessageSquare, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DocumentUpload } from '@/components/DocumentUpload';
-import { DocumentList } from '@/components/DocumentList';
 import { ChatInterface } from '@/components/ChatInterface';
+import { UserDocumentsWrapper } from '@/components/UserDocumentsWrapper';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Document {
   id: string;
@@ -17,26 +17,21 @@ interface Document {
 }
 
 const Dashboard = () => {
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: '1',
-      name: 'Sample Document.pdf',
-      uploadedAt: '2024-01-08',
-      size: 1024000,
-      status: 'ready',
-      chunksCount: 15
-    }
-  ]);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const { user } = useAuth();
+
+  const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
   const [activeTab, setActiveTab] = useState<'documents' | 'chat'>('documents');
 
   const handleDocumentSelect = (document: Document) => {
-    setSelectedDocument(document);
+    // Ajouter le document uniquement s’il n’est pas encore sélectionné
+    setSelectedDocuments((prev) => {
+      const alreadySelected = prev.some((doc) => doc.id === document.id);
+      return alreadySelected ? prev : [...prev, document];
+    });
     setActiveTab('chat');
   };
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
     console.log('Logout clicked');
   };
 
@@ -49,7 +44,7 @@ const Dashboard = () => {
             <FileText className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">DocChat</h1>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm">
               <User className="h-4 w-4 mr-2" />
@@ -79,17 +74,12 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <DocumentUpload 
+                  <DocumentUpload
                     onUpload={(files) => {
-                      // TODO: Handle file upload
                       console.log('Files uploaded:', files);
                     }}
                   />
-                  <DocumentList 
-                    documents={documents}
-                    onDocumentSelect={handleDocumentSelect}
-                    selectedDocument={selectedDocument}
-                  />
+                  <UserDocumentsWrapper userId={user.id} onSelectDocument={handleDocumentSelect} />
                 </div>
               </CardContent>
             </Card>
@@ -97,19 +87,21 @@ const Dashboard = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {selectedDocument ? (
+            {selectedDocuments.length > 0 ? (
               <Card className="h-[600px]">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <MessageSquare className="h-5 w-5" />
-                    <span>Chat with {selectedDocument.name}</span>
+                    <span>
+                      Chat with {selectedDocuments.length === 1 ? selectedDocuments[0].name : `${selectedDocuments.length} documents`}
+                    </span>
                   </CardTitle>
                   <CardDescription>
-                    Ask questions about your document and get AI-powered answers
+                    Ask questions about your selected documents and get AI-powered answers
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <ChatInterface document={selectedDocument} />
+                  <ChatInterface selectedDocuments={selectedDocuments} userId={user.id} />
                 </CardContent>
               </Card>
             ) : (
