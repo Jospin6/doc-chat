@@ -3,17 +3,11 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
-dotenv.config();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabase } from "@/integrations/supabase/client";
 
 export const indexDocument = async (text: string, userId: string, sourcePath: string) => {
   const embeddings = new HuggingFaceInferenceEmbeddings({
-    apiKey: process.env.HUGGINGFACE_API_KEY!,
+    apiKey: import.meta.env.VITE_APP_HUGGINGFACE_API_KEY!,
     model: "sentence-transformers/all-MiniLM-L6-v2",
   });
 

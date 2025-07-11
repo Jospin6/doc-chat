@@ -1,6 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import dotenv from "dotenv";
-dotenv.config();
 
 // ✅ Fonction pour récupérer les documents d'un utilisateur
 export const getUserDocuments = async (userId: string) => {

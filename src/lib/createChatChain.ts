@@ -6,17 +6,11 @@ import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
-import dotenv from "dotenv";
-dotenv.config();
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabase } from "@/integrations/supabase/client";
 
 export const createChatChain = async (userId: string, selectedDocumentIds: string[]) => {
   const embeddings = new HuggingFaceInferenceEmbeddings({
-    apiKey: process.env.HUGGINGFACE_API_KEY!,
+    apiKey: import.meta.env.VITE_APP_HUGGINGFACE_API_KEY!,
     model: "sentence-transformers/all-MiniLM-L6-v2",
   });
 
