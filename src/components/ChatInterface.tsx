@@ -135,27 +135,24 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`flex max-w-[80%] space-x-2 ${
-                  message.role === 'user' ? 'flex-row-reverse space-x-reverse' : 'flex-row'
-                }`}
+                className={`flex max-w-[80%] space-x-2 ${message.role === 'user' ? 'flex-row-reverse space-x-reverse' : 'flex-row'
+                  }`}
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.role === 'user'
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground'
-                  }`}
+                    }`}
                 >
                   {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
 
                 <div className="space-y-2">
                   <Card
-                    className={`p-3 ${
-                      message.role === 'user'
+                    className={`p-3 ${message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
-                    }`}
+                      }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     <p className="text-xs opacity-70 mt-2">
