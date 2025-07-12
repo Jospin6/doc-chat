@@ -93,63 +93,6 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
       )
     );
 
-    // try {
-    //   const fileName = `${Date.now()}_${file.name}`;
-
-    //   // Upload dans Supabase Storage
-    //   const { data, error } = await supabase.storage
-    //     .from('documents')
-    //     .upload(fileName, file, {
-    //       contentType: 'application/pdf',
-    //     });
-
-    //   if (error) throw error;
-    //   const bucketPath = data?.path;
-
-    //   setUploadingFiles(prev =>
-    //     prev.map(u =>
-    //       u.file === file ? { ...u, status: 'processing', progress: 70 } : u
-    //     )
-    //   );
-
-    //   // Extraire le texte
-    //   const extractedText = await extractTextFromPDF(file);
-
-    //   // Embedding
-    //   await indexDocument(extractedText, user.id, bucketPath)
-
-    //   // Callback pour traitement (embedding, DB, etc.)
-    //   onUpload({
-    //     file,
-    //     bucketPath: bucketPath!,
-    //     extractedText,
-    //   });
-
-    //   setUploadingFiles(prev =>
-    //     prev.map(u =>
-    //       u.file === file ? { ...u, status: 'complete', progress: 100 } : u
-    //     )
-    //   );
-
-    //   toast({
-    //     title: 'Upload réussi',
-    //     description: `${file.name} est prêt à être utilisé`,
-    //   });
-    // } catch (err) {
-    //   console.error(err);
-    //   setUploadingFiles(prev =>
-    //     prev.map(u =>
-    //       u.file === file ? { ...u, status: 'error', progress: 0 } : u
-    //     )
-    //   );
-
-    //   toast({
-    //     title: 'Erreur upload',
-    //     description: `Impossible de traiter ${file.name}`,
-    //     variant: 'destructive',
-    //   });
-    // }
-
     try {
       const rawName = `${Date.now()}_${file.name}`;
       const fileName = `flreew_1/${rawName}`;

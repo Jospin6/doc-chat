@@ -38,7 +38,6 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [chatChain, setChatChain] = useState<any>(null);
-  console.log("selected docs: ", selectedDocuments)
 
   // Initialiser chatChain au montage
   useEffect(() => {
@@ -50,7 +49,7 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
         {
           id: '1',
           role: 'assistant',
-          content: `Salut ! Tu peux poser des questions sur tes documents sélectionnés.`,
+          content: `Hi! You can ask questions about your selected documents.`,
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -103,7 +102,7 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: response.answer || 'Je n’ai pas trouvé de réponse pertinente.',
+        content: response.answer || "I didn't find a relevant answer.",
         timestamp: new Date().toISOString(),
         sources: (response.context || []).map((doc: any) => ({
           chunk: doc.pageContent,
@@ -113,7 +112,7 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      console.error("Erreur pendant le chat:", err);
+      console.log("Error during the chat:", err);
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +163,7 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
                     </p>
                   </Card>
 
-                  {message.sources && (
+                  {/* {message.sources && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground font-medium">Sources:</p>
                       {message.sources.map((source, index) => (
@@ -176,7 +175,7 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
                         </Card>
                       ))}
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>

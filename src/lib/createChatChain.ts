@@ -26,8 +26,8 @@ export const createChatChain = async (userId: string, selectedDocumentIds: strin
   const filteredRetriever = vectorstore.asRetriever({
   k: 3,
   filter: {
-    user_id: userId, // va matcher d.metadata @> '{"user_id": "..."}'
-    ids: selectedDocumentIds, // tableau d’UUIDs à filtrer
+    user_id: userId,
+    ids: selectedDocumentIds,
   },
   });
 
@@ -50,7 +50,7 @@ export const createChatChain = async (userId: string, selectedDocumentIds: strin
   const retrieverPrompt = ChatPromptTemplate.fromMessages([
     new MessagesPlaceholder("chat_history"),
     ["user", "{input}"],
-    ["user", "Sur la base de cette conversation, génère une requête de recherche pertinente."],
+    ["user", "Based on this conversation, generate a relevant search query."],
   ]);
 
   const historyAwareRetriever = await createHistoryAwareRetriever({
@@ -63,12 +63,6 @@ export const createChatChain = async (userId: string, selectedDocumentIds: strin
     retriever: historyAwareRetriever,
     combineDocsChain,
   });
-
-  const response = await chatChain.invoke({
-        input: "qui est le signateur de ce lettre ?",
-      });
-
-      console.log("la reponse: ", response)
 
   return chatChain;
 };

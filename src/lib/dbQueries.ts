@@ -5,7 +5,7 @@ export const getUserDocuments = async (userId: string) => {
   const { data, error } = await supabase
     .from("document")
     .select("*")
-    .eq("metadata->>user_id", userId) // <- important : extraction de user_id depuis metadata JSONB
+    .eq("metadata->>user_id", userId)
 
   if (error) {
     console.error("Erreur récupération documents:", error);

@@ -31,6 +31,4 @@ export const indexDocument = async (text: string, userId: string, sourcePath: st
     tableName: "document",
     queryName: "match_document",
   });
-
-  console.log(`✅ Document indexé pour l'utilisateur ${userId}`);
 };
