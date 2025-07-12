@@ -38,6 +38,7 @@ export const UserDocumentsWrapper = ({
   useEffect(() => {
     const fetchDocs = async () => {
       const docs: SupabaseDoc[] = await getUserDocuments(userId);
+      console.log("les docs: ", docs)
 
       const formatted: DocumentListUI[] = docs.map((doc) => ({
         id: doc.id,
@@ -52,7 +53,7 @@ export const UserDocumentsWrapper = ({
     };
 
     fetchDocs();
-  }, [userId]);
+  }, []);
 
   const handleToggleSelect = (doc: DocumentListUI) => {
     setSelectedDocuments((prev) =>

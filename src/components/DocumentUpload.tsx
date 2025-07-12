@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import * as pdfjsLib from 'pdfjs-dist';
 import { indexDocument } from '@/lib/indexDocument';
 import { useAuth } from '@/hooks/useAuth';
+import pdfToText from 'react-pdftotext';
 
 interface DocumentUploadProps {
   onUpload: (payload: {
@@ -18,7 +19,7 @@ interface DocumentUploadProps {
 
 export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const {user} = useAuth()
+  const { user } = useAuth()
   const [uploadingFiles, setUploadingFiles] = useState<Array<{
     file: File;
     progress: number;
@@ -76,18 +77,13 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-    let text = '';
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item: any) => item.str).join(' ');
-      text += pageText + '\n';
+    try {
+      const text = await pdfToText(file);
+      return text;
+    } catch (error) {
+      alert("Impossible d'extraire le texte du PDF.");
+      return '';
     }
-
-    return text;
   };
 
   const processFile = async (file: File) => {
@@ -97,18 +93,88 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
       )
     );
 
-    try {
-      const fileName = `${Date.now()}_${file.name}`;
+    // try {
+    //   const fileName = `${Date.now()}_${file.name}`;
 
-      // Upload dans Supabase Storage
+    //   // Upload dans Supabase Storage
+    //   const { data, error } = await supabase.storage
+    //     .from('documents')
+    //     .upload(fileName, file, {
+    //       contentType: 'application/pdf',
+    //     });
+
+    //   if (error) throw error;
+    //   const bucketPath = data?.path;
+
+    //   setUploadingFiles(prev =>
+    //     prev.map(u =>
+    //       u.file === file ? { ...u, status: 'processing', progress: 70 } : u
+    //     )
+    //   );
+
+    //   // Extraire le texte
+    //   const extractedText = await extractTextFromPDF(file);
+
+    //   // Embedding
+    //   await indexDocument(extractedText, user.id, bucketPath)
+
+    //   // Callback pour traitement (embedding, DB, etc.)
+    //   onUpload({
+    //     file,
+    //     bucketPath: bucketPath!,
+    //     extractedText,
+    //   });
+
+    //   setUploadingFiles(prev =>
+    //     prev.map(u =>
+    //       u.file === file ? { ...u, status: 'complete', progress: 100 } : u
+    //     )
+    //   );
+
+    //   toast({
+    //     title: 'Upload réussi',
+    //     description: `${file.name} est prêt à être utilisé`,
+    //   });
+    // } catch (err) {
+    //   console.error(err);
+    //   setUploadingFiles(prev =>
+    //     prev.map(u =>
+    //       u.file === file ? { ...u, status: 'error', progress: 0 } : u
+    //     )
+    //   );
+
+    //   toast({
+    //     title: 'Erreur upload',
+    //     description: `Impossible de traiter ${file.name}`,
+    //     variant: 'destructive',
+    //   });
+    // }
+
+    try {
+      const rawName = `${Date.now()}_${file.name}`;
+      const fileName = `flreew_1/${rawName}`;
+      console.log("Uploading file to Supabase...");
       const { data, error } = await supabase.storage
         .from('documents')
         .upload(fileName, file, {
           contentType: 'application/pdf',
         });
 
-      if (error) throw error;
+      // Copier dans le dossier SELECT
+      // const copyError = await supabase.storage
+      //   .from('documents')
+      //   .copy(fileName, `flreew_0/${rawName}`);
+
+      // if (copyError.error) throw copyError.error;
+
+      // // Maintenant tu peux lire depuis `flreew_0/${rawName}`
+      // const publicURL = supabase.storage
+      //   .from('documents')
+      //   .getPublicUrl(`flreew_0/${rawName}`).data.publicUrl;
+
+      if (error) throw new Error("Supabase upload failed: " + error.message);
       const bucketPath = data?.path;
+      console.log("Upload réussi:", bucketPath);
 
       setUploadingFiles(prev =>
         prev.map(u =>
@@ -116,13 +182,14 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
         )
       );
 
-      // Extraire le texte
+      console.log("Extraction du texte...");
       const extractedText = await extractTextFromPDF(file);
+      console.log("Texte extrait");
 
-      // Embedding
-      await indexDocument(extractedText, user.id, bucketPath)
+      console.log("Indexation...");
+      await indexDocument(extractedText, user.id, bucketPath);
+      console.log("Indexation terminée");
 
-      // Callback pour traitement (embedding, DB, etc.)
       onUpload({
         file,
         bucketPath: bucketPath!,
@@ -140,7 +207,7 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
         description: `${file.name} est prêt à être utilisé`,
       });
     } catch (err) {
-      console.error(err);
+      console.error('Erreur pendant l’upload :', err);
       setUploadingFiles(prev =>
         prev.map(u =>
           u.file === file ? { ...u, status: 'error', progress: 0 } : u
@@ -153,6 +220,7 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
         variant: 'destructive',
       });
     }
+
   };
 
   const removeUpload = (file: File) => {
@@ -162,11 +230,10 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   return (
     <div className="space-y-4">
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-          isDragging
-            ? 'border-primary bg-primary/10'
-            : 'border-muted-foreground hover:border-primary hover:bg-muted/50'
-        }`}
+        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging
+          ? 'border-primary bg-primary/10'
+          : 'border-muted-foreground hover:border-primary hover:bg-muted/50'
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

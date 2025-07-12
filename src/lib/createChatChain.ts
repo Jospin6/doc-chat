@@ -20,27 +20,27 @@ export const createChatChain = async (userId: string, selectedDocumentIds: strin
     queryName: "match_document",
   });
 
+  const results = await vectorstore.similaritySearch("test query", 3);
+
   // Filtrage des documents sélectionnés par l'utilisateur
   const filteredRetriever = vectorstore.asRetriever({
-    k: 3,
-    filter: (metadata) => {
-      return (
-        metadata.user_id === userId &&
-        selectedDocumentIds.includes(metadata.id)
-      );
-    },
+  k: 3,
+  filter: {
+    user_id: userId, // va matcher d.metadata @> '{"user_id": "..."}'
+    ids: selectedDocumentIds, // tableau d’UUIDs à filtrer
+  },
   });
 
   const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY!,
-    model: "llama-3-70b-8192",
+    apiKey: import.meta.env.VITE_APP_GROQ_API_KEY!,
+    model: "llama3-70b-8192",
   });
 
   const prompt = ChatPromptTemplate.fromMessages([
-    ["system", "Réponds aux questions de l'utilisateur à partir des documents sélectionnés : {context}"],
-    new MessagesPlaceholder("chat_history"),
-    ["user", "{input}"],
-  ]);
+  ["system", `You are an expert assistant. Use the following context to answer the user's question:\n\n{context}`],
+  new MessagesPlaceholder("chat_history"),
+  ["user", "{input}"],
+]);
 
   const combineDocsChain = await createStuffDocumentsChain({
     llm: model,
@@ -63,6 +63,12 @@ export const createChatChain = async (userId: string, selectedDocumentIds: strin
     retriever: historyAwareRetriever,
     combineDocsChain,
   });
+
+  const response = await chatChain.invoke({
+        input: "qui est le signateur de ce lettre ?",
+      });
+
+      console.log("la reponse: ", response)
 
   return chatChain;
 };

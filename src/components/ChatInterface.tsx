@@ -38,6 +38,7 @@ export const ChatInterface = ({ selectedDocuments, userId }: ChatInterfaceProps)
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [chatChain, setChatChain] = useState<any>(null);
+  console.log("selected docs: ", selectedDocuments)
 
   // Initialiser chatChain au montage
   useEffect(() => {
