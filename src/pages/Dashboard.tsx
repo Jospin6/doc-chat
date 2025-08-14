@@ -6,6 +6,7 @@ import { DocumentUpload } from '@/components/DocumentUpload';
 import { ChatInterface } from '@/components/ChatInterface';
 import { UserDocumentsWrapper } from '@/components/UserDocumentsWrapper';
 import { useAuth } from '@/hooks/useAuth';
+import { extractFileName } from '@/lib/utils';
 
 interface Document {
   id: string;
@@ -93,7 +94,7 @@ const Dashboard = () => {
                   <CardTitle className="flex items-center space-x-2">
                     <MessageSquare className="h-5 w-5" />
                     <span>
-                      Chat with {selectedDocuments.length === 1 ? selectedDocuments[0].name : `${selectedDocuments.length} documents`}
+                      Chat with {selectedDocuments.length === 1 ? extractFileName(selectedDocuments[0].name) : `${selectedDocuments.length} documents`}
                     </span>
                   </CardTitle>
                   <CardDescription>

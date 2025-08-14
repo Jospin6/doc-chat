@@ -1,6 +1,7 @@
 import { FileText, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { extractFileName } from '@/lib/utils';
 
 interface Document {
   id: string;
@@ -88,13 +89,13 @@ export const DocumentList = ({
               <div className="flex-shrink-0 mt-1">{getStatusIcon(document.status)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium truncate">{document.name}</h4>
+                  <h4 className="text-sm font-medium truncate">{extractFileName(document.name)}</h4>
                   {getStatusBadge(document.status)}
                 </div>
 
                 <div className="flex items-center text-xs text-muted-foreground space-x-2">
-                  <span>{formatFileSize(document.size)}</span>
-                  <span>•</span>
+                  {/* <span>{formatFileSize(document.size)}</span>
+                  <span>•</span> */}
                   <span>{document.uploadedAt}</span>
                   {document.chunksCount && (
                     <>
