@@ -69,73 +69,79 @@ export const DocumentList = ({
 
   return (
     <div className="space-y-2">
-      {documents.map((document) => {
-        const selected = isSelected(document);
-        return (
-          <div
-            key={document.id}
-            className={`p-3 border rounded-lg cursor-pointer transition-colors ${selected
-              ? 'border-primary bg-primary/10'
-              : 'hover:bg-muted/50'
-              }`}
-            onClick={() => {
-              if (document.status === 'ready') {
-                onToggleSelect(document);
-                onDocumentSelect(document);
-              }
-            }}
-          >
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 mt-1">{getStatusIcon(document.status)}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium truncate">{extractFileName(document.name)}</h4>
-                  {getStatusBadge(document.status)}
-                </div>
-
-                <div className="flex items-center text-xs text-muted-foreground space-x-2">
-                  {/* <span>{formatFileSize(document.size)}</span>
-                  <span>•</span> */}
-                  <span>{document.uploadedAt}</span>
-                  {document.chunksCount && (
-                    <>
-                      <span>•</span>
-                      <span>{document.chunksCount} chunks</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {document.status === 'ready' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={(e) => {
-                  e.stopPropagation();
+      {documents
+        .reverse()
+        .filter((document, index, self) =>
+          index === self.findIndex(d => d.name === document.name)
+        )
+        .map((document) => {
+          const selected = isSelected(document);
+          return (
+            // ... le reste de votre code JSX existant ...
+            <div
+              key={document.id}
+              className={`p-3 border rounded-lg cursor-pointer transition-colors ${selected
+                ? 'border-primary bg-primary/10'
+                : 'hover:bg-muted/50'
+                }`}
+              onClick={() => {
+                if (document.status === 'ready') {
                   onToggleSelect(document);
                   onDocumentSelect(document);
-                }}
-              >
-                {selected ? 'Désélectionner' : 'Chat avec ce document'}
-              </Button>
-            )}
+                }
+              }}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 mt-1">{getStatusIcon(document.status)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="text-sm font-medium truncate">{extractFileName(document.name)}</h4>
+                    {getStatusBadge(document.status)}
+                  </div>
 
-            {document.status === 'processing' && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Processing document and generating embeddings...
-              </p>
-            )}
+                  <div className="flex items-center text-xs text-muted-foreground space-x-2">
+                    {/* <span>{formatFileSize(document.size)}</span>
+                  <span>•</span> */}
+                    <span>{document.uploadedAt}</span>
+                    {document.chunksCount && (
+                      <>
+                        <span>•</span>
+                        <span>{document.chunksCount} chunks</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-            {document.status === 'error' && (
-              <p className="text-xs text-red-500 mt-2">
-                Failed to process document. Please try uploading again.
-              </p>
-            )}
-          </div>
-        );
-      })}
+              {document.status === 'ready' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleSelect(document);
+                    onDocumentSelect(document);
+                  }}
+                >
+                  {selected ? 'Désélectionner' : 'Chat avec ce document'}
+                </Button>
+              )}
+
+              {document.status === 'processing' && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Processing document and generating embeddings...
+                </p>
+              )}
+
+              {document.status === 'error' && (
+                <p className="text-xs text-red-500 mt-2">
+                  Failed to process document. Please try uploading again.
+                </p>
+              )}
+            </div>
+          );
+        })}
     </div>
   );
 };

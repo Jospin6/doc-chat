@@ -62,8 +62,35 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
     handleFiles(files);
   }, []);
 
-  const handleFiles = async (files: File[]) => {
-    const newUploads = files.map(file => ({
+  // const handleFiles = async (files: File[]) => {
+  //   const newUploads = files.map(file => ({
+  //     file,
+  //     progress: 0,
+  //     status: 'uploading' as const,
+  //   }));
+
+  //   setUploadingFiles(prev => [...prev, ...newUploads]);
+
+  //   for (const upload of newUploads) {
+  //     await processFile(upload.file);
+  //   }
+  // };
+
+  const handleFiles = useCallback(async (files: File[]) => {
+    // Filtrer les fichiers déjà en cours d'upload
+    const existingFiles = uploadingFiles.map(u => u.file.name);
+    const newFiles = files.filter(file => !existingFiles.includes(file.name));
+
+    if (newFiles.length === 0) {
+      toast({
+        title: 'Files already uploading',
+        description: 'Some files are already being processed',
+        variant: 'default',
+      });
+      return;
+    }
+
+    const newUploads = newFiles.map(file => ({
       file,
       progress: 0,
       status: 'uploading' as const,
@@ -71,10 +98,9 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
 
     setUploadingFiles(prev => [...prev, ...newUploads]);
 
-    for (const upload of newUploads) {
-      await processFile(upload.file);
-    }
-  };
+    // Traiter les fichiers en parallèle
+    await Promise.all(newFiles.map(file => processFile(file)));
+  }, [uploadingFiles, toast]);
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
@@ -87,13 +113,16 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   };
 
   const processFile = async (file: File) => {
-    setUploadingFiles(prev =>
-      prev.map(u =>
-        u.file === file ? { ...u, status: 'uploading', progress: 10 } : u
-      )
-    );
-
     try {
+      // Vérifier si le fichier est déjà dans l'état (au cas où)
+      const alreadyUploading = uploadingFiles.some(u => u.file === file);
+      if (alreadyUploading) return;
+
+      setUploadingFiles(prev =>
+        prev.map(u =>
+          u.file === file ? { ...u, status: 'uploading', progress: 10 } : u
+        )
+      );
       const rawName = `${Date.now()}_${file.name}`;
       const fileName = `flreew_1/${rawName}`;
       console.log("Uploading file to Supabase...");
