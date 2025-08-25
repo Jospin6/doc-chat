@@ -39,7 +39,7 @@ A modern web application that allows users to upload PDF documents and interact 
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/doc-chat.git
+git clone https://github.com/Jospin6/doc-chat.git
 cd doc-chat
 
 # Install dependencies
@@ -52,3 +52,12 @@ GROQ_API_KEY=your_openai_api_key_here
 
 # Start development server
 npm run dev
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 👨‍💻 Author
+Built with ❤️ by Jospin Ndagano
